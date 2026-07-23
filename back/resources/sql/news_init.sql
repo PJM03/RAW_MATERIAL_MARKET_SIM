@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS news (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    news TEXT NOT NULL,
+    trend CHAR(10),
+    related_items TEXT,
+    issued_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)

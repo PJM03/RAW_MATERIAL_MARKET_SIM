@@ -1,0 +1,14 @@
+[project]
+name = "project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "apscheduler>=3.11.3",
+    "fastapi[standard]>=0.139.0",
+    "numpy>=2.5.1",
+    "openai>=2.45.0",
+    "pandas>=3.0.3",
+    "streamlit>=1.59.0",
+]
