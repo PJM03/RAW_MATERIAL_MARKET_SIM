@@ -4,7 +4,7 @@
 
 AI 기반 뉴스 생성을 통한 실시간 원자재 가격 변동 시뮬레이터입니다. LLM(Large Language Model)을 활용하여 경제 뉴스를 자동 생성하고, 생성된 뉴스에 따라 원자재 가격이 동적으로 변화하는 시스템을 구현했습니다.
 
- - (이 README.md 는 VSCode 의 ZOO Code 확장에 Claude Sonnet 4.5를 이용하여 생성되었습니다.)
+ - (이 README.md 는 VSCode 의 ZOO Code 확장을 이용해 Claude Sonnet 4.5 가 코드를 읽고 분석하여 생성되었습니다.)
 
 ## 🏗️ 시스템 아키텍처
 
