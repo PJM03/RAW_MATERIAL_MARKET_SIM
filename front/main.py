@@ -17,7 +17,7 @@ def text_slice(text: str, max_len: int):
     if len(text) <= max_len: return text
     return f"{text[:max_len]}..."
 
-@st.fragment(run_every=11)
+@st.fragment(run_every=16)
 def render():
     res_data = get_all_data()
     item_data = res_data["items"]
