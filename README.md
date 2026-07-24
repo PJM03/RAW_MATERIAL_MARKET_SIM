@@ -112,29 +112,10 @@ def get_llm_news(items: list[str]):
 
 **1. item 테이블** ([`back/resources/sql/item_init.sql`](back/resources/sql/item_init.sql))
 
-```sql
-CREATE TABLE IF NOT EXISTS item (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name VARCHAR(100) NOT NULL,
-    description TEXT NOT NULL,
-    price REAL NOT NULL
-);
-```
-
 - 원자재 정보 저장 (금, 석유, 밀 등)
 - `price`: 현재가 (실시간 업데이트)
 
 **2. news 테이블** ([`back/resources/sql/news_init.sql`](back/resources/sql/news_init.sql))
-
-```sql
-CREATE TABLE IF NOT EXISTS news (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    news TEXT NOT NULL,
-    trend CHAR(10),
-    related_items TEXT,
-    issued_at DATETIME DEFAULT CURRENT_TIMESTAMP
-)
-```
 
 - AI가 생성한 경제 뉴스 저장
 - `trend`: "RISE" 또는 "FALL"
@@ -147,17 +128,6 @@ CREATE TABLE IF NOT EXISTS news (
   ```
 
 **3. price 테이블** ([`back/resources/sql/price_init.sql`](back/resources/sql/price_init.sql))
-
-```sql
-CREATE TABLE IF NOT EXISTS price (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    item_id INTEGER,
-    price REAL,
-    reason_news_id INTEGER,
-    FOREIGN KEY (item_id) REFERENCES item (id),
-    FOREIGN KEY (reason_news_id) REFERENCES news (id)
-);
-```
 
 - 가격 이력 저장 (시계열 데이터)
 - `reason_news_id`: 가격 변동을 유발한 뉴스 추적
@@ -233,53 +203,6 @@ def render():
 | GET | `/item/data?id={id}` | 아이템 통합 데이터 | Item + Prices + News |
 | GET | `/item/data/all` | 전체 데이터 (대시보드용) | All items + Latest news |
 
-### Pydantic 스키마
-
-[`back/schemas/api_schema.py`](back/schemas/api_schema.py)
-
-```python
-class ApiResponse[T](BaseModel):
-    success: bool
-    message: str
-    data: T
-```
-
-**Python 3.12+ Generic Type Parameter 활용** - 타입 안전성 극대화
-
-## 🚀 실행 방법
-
-### 환경 변수 설정
-
-`.env` 파일 생성:
-
-```bash
-LLM_API_KEY=your_openai_api_key
-LLM_API_ENDPOINT=https://api.openai.com/v1
-LLM_API_MODEL=gpt-4o-2024-08-06
-```
-
-### 로컬 실행
-
-```bash
-# 의존성 설치
-pip install -r requirements.txt
-
-# 통합 실행 (백엔드 + 프론트엔드)
-python start.py
-```
-
-**start.py 동작:**
-- FastAPI 서버: `http://localhost:8000`
-- Streamlit 대시보드: `http://localhost:8501`
-- 4초 지연으로 백엔드 초기화 대기
-
-### Docker 실행
-
-```bash
-docker build -t raw-material-simulator .
-docker run -p 7860:7860 --env-file .env raw-material-simulator
-```
-
 ## 📊 데이터 흐름
 
 ```
@@ -328,16 +251,6 @@ docker run -p 7860:7860 --env-file .env raw-material-simulator
 
 ### 1. SQLite 최적화
 
-[`back/services/db_service.py`](back/services/db_service.py:15-19)
-
-```python
-self.conn = sql.connect("system.db", check_same_thread=False, 
-                        detect_types=sql.PARSE_DECLTYPES | sql.PARSE_COLNAMES)
-self.cursor.execute("PRAGMA foreign_keys = ON;")
-self.cursor.execute("PRAGMA journal_mode = WAL;")
-self.cursor.execute("PRAGMA busy_timeout = 5000;")
-```
-
 **설정 의미:**
 - `check_same_thread=False`: FastAPI의 비동기 환경에서 스레드 간 연결 공유
 - `journal_mode = WAL`: Write-Ahead Logging으로 동시성 향상
@@ -359,57 +272,6 @@ return {
 ```
 
 GPT-4o 가격 기준 자동 계산 (원화 환산)
-
-### 3. 가격 변동 계산
-
-[`back/services/db_service.py`](back/services/db_service.py:66-74)
-
-```python
-self.cursor.execute("""
-    INSERT INTO price(item_id, price, reason_news_id)
-    SELECT 
-        id,
-        price * (1 + ?),  -- 복리 계산
-        ?
-    FROM item
-    WHERE name = ?
-    """, (item.change_rate, news_id, item.item))
-```
-
-**수학적 모델:**
-- `new_price = old_price × (1 + change_rate)`
-- change_rate = 0.15 → 15% 상승
-- change_rate = -0.08 → 8% 하락
-
-## 🎨 프로젝트 구조
-
-```
-project/
-├── back/                           # 백엔드 (FastAPI)
-│   ├── main.py                     # API 엔트리포인트
-│   ├── system.db                   # SQLite 데이터베이스
-│   ├── resources/
-│   │   ├── news_prompt.txt         # LLM 프롬프트
-│   │   └── sql/                    # DB 스키마
-│   │       ├── item_init.sql
-│   │       ├── news_init.sql
-│   │       ├── price_init.sql
-│   │       └── item_price_trigger.sql
-│   ├── schemas/                    # Pydantic 모델
-│   │   ├── api_schema.py
-│   │   └── item_schema.py
-│   └── services/                   # 비즈니스 로직
-│       ├── db_service.py
-│       └── scheduler/
-│           └── news_scheduler.py   # LLM 통합
-├── front/                          # 프론트엔드 (Streamlit)
-│   └── main.py                     # 대시보드 UI
-├── start.py                        # 통합 실행 스크립트
-├── start.sh                        # Docker 실행 스크립트
-├── Dockerfile                      # 컨테이너 설정
-├── requirements.txt                # Python 의존성
-└── README.md                       # 문서
-```
 
 ## 💡 핵심 알고리즘
 
@@ -433,43 +295,3 @@ target_trend = random.choice(["RISE", "FALL"])
 - 아이템 수: 균등 분포 (1~4개)
 - 트렌드: 50/50 확률
 - 변동률: LLM이 정규분포 유사하게 생성 (-0.2 ~ +0.2 주로, 극단값 희귀)
-
-## 🔒 보안 및 제한사항
-
-1. **인증 미구현**: 현재 프로토타입 단계, 프로덕션에는 JWT/OAuth 필요
-2. **Rate Limiting 부재**: API 호출 제한 없음
-3. **SQL Injection 방지**: Parameterized query 사용으로 방어
-4. **환경 변수**: API 키는 .env로 분리 (gitignore 처리)
-
-## 📈 향후 개선 사항
-
-1. **백테스팅 기능**: 과거 뉴스 재현 및 가격 예측 검증
-2. **WebSocket 통합**: SSE/WebSocket으로 실시간 푸시
-3. **Redis 캐싱**: 반복 쿼리 최적화
-4. **PostgreSQL 마이그레이션**: 대규모 데이터 처리
-5. **사용자 포트폴리오**: 가상 거래 시뮬레이션
-
-## 📄 라이선스
-
-MIT License
-
-## 👨‍💻 기술 스택 요약
-
-| 영역 | 기술 | 버전 | 역할 |
-|------|------|------|------|
-| API 서버 | FastAPI | 0.139.2 | 비동기 REST API |
-| 데이터베이스 | SQLite3 | - | 관계형 DB (WAL 모드) |
-| 스케줄러 | APScheduler | 3.11.3 | 백그라운드 작업 |
-| AI | OpenAI API | 2.47.0 | 뉴스 생성 (GPT-4o) |
-| UI | Streamlit | 1.60.0 | 실시간 대시보드 |
-| 유효성 검증 | Pydantic | 2.13.4 | 타입 안전성 |
-| 컨테이너 | Docker | - | 배포 환경 표준화 |
-
----
-
-**발표 포인트:**
-1. **AI 프롬프트 엔지니어링**: 7가지 Critical Rule로 고품질 뉴스 생성 보장
-2. **DB 트리거 메커니즘**: 가격 동기화 자동화로 데이터 일관성 유지
-3. **비동기 아키텍처**: FastAPI + APScheduler로 non-blocking 스케줄링
-4. **타입 안전성**: Pydantic Generic + Python 3.12+ 최신 문법 활용
-5. **실시간 데이터 파이프라인**: LLM → DB → API → UI 완전 자동화
