@@ -97,15 +97,15 @@ def get_llm_news(items: list[str]):
 #### ERD (Entity Relationship Diagram)
 
 ```
-┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
-│      item       │         │      price      │         │      news       │
-├─────────────────┤         ├─────────────────┤         ├─────────────────┤
-│ id (PK)         │◄────┐   │ id (PK)         │   ┌────►│ id (PK)         │
-│ name            │     │   │ item_id (FK)    │   │     │ news            │
-│ description     │     └───│ price           │   │     │ trend           │
-│ price           │◄────────│ reason_news_id  ├───┘     │ related_items   │
-└─────────────────┘   sync  └─────────────────┘         │ issued_at       │
-                      trigger                           └─────────────────┘
+┌─────────────────┐         ┌──────────────────────┐         ┌─────────────────┐
+│      item       │         │         price        │         │      news       │
+├─────────────────┤         ├──────────────────────┤         ├─────────────────┤
+│ id (PK)         │◄────┐   │ id (PK)              │   ┌────►│ id (PK)         │
+│ name            │     └───│ item_id (FK)         │   │     │ news            │
+│ description     │         │ reason_news_id (FK)  ├───┘     │ trend           │
+│ price           │◄────────│ price                │         │ related_items   │
+└─────────────────┘   sync  └──────────────────────┘         │ issued_at       │
+                      trigger                                └─────────────────┘
 ```
 
 #### 테이블 상세 설명
