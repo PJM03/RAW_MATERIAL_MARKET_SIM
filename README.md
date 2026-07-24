@@ -126,6 +126,43 @@ def get_llm_news(items: list[str]):
 - 랜덤 아이템 샘플링 (1~4개)으로 다양성 확보
 - 토큰 사용량 추적 및 비용 계산
 
+### LLM 비용 추적
+
+[`back/services/scheduler/news_scheduler.py`](back/services/scheduler/news_scheduler.py:51-57)
+
+```python
+return {
+    "response_data": response.choices[0].message.parsed,
+    "input_tokens": response.usage.prompt_tokens,
+    "output_tokens": response.usage.completion_tokens,
+    "input_token_cost": (response.usage.prompt_tokens / 1_000_000) * 394,
+    "output_token_cost": (response.usage.completion_tokens / 1_000_000) * 3150
+}
+```
+
+GPT-4o 가격 기준 자동 계산 (원화 환산)
+
+### 뉴스 생성 로직
+
+```python
+# 1. 아이템 랜덤 샘플링 (1~4개)
+random_amount = random.randint(1, min(4, len(items)))
+target_items = random.sample(items, random_amount)
+
+# 2. 트렌드 랜덤 선택
+target_trend = random.choice(["RISE", "FALL"])
+
+# 3. LLM에게 제약사항과 함께 요청
+# - 선택된 아이템만 영향
+# - 지정된 트렌드 준수
+# - 이전 뉴스와 중복 방지
+```
+
+**확률 분포:**
+- 아이템 수: 균등 분포 (1~4개)
+- 트렌드: 50/50 확률
+- 변동률: LLM이 정규분포 유사하게 생성 (-0.2 ~ +0.2 주로, 극단값 희귀)
+
 ### 2. 데이터베이스 스키마
 
 #### ERD (Entity Relationship Diagram)
@@ -290,42 +327,3 @@ def render():
 - `journal_mode = WAL`: Write-Ahead Logging으로 동시성 향상
 - `busy_timeout = 5000`: 락 대기 시간 5초
 - `foreign_keys = ON`: 참조 무결성 강제
-
-### 2. LLM 비용 추적
-
-[`back/services/scheduler/news_scheduler.py`](back/services/scheduler/news_scheduler.py:51-57)
-
-```python
-return {
-    "response_data": response.choices[0].message.parsed,
-    "input_tokens": response.usage.prompt_tokens,
-    "output_tokens": response.usage.completion_tokens,
-    "input_token_cost": (response.usage.prompt_tokens / 1_000_000) * 394,
-    "output_token_cost": (response.usage.completion_tokens / 1_000_000) * 3150
-}
-```
-
-GPT-4o 가격 기준 자동 계산 (원화 환산)
-
-## 💡 핵심 알고리즘
-
-### 뉴스 생성 로직
-
-```python
-# 1. 아이템 랜덤 샘플링 (1~4개)
-random_amount = random.randint(1, min(4, len(items)))
-target_items = random.sample(items, random_amount)
-
-# 2. 트렌드 랜덤 선택
-target_trend = random.choice(["RISE", "FALL"])
-
-# 3. LLM에게 제약사항과 함께 요청
-# - 선택된 아이템만 영향
-# - 지정된 트렌드 준수
-# - 이전 뉴스와 중복 방지
-```
-
-**확률 분포:**
-- 아이템 수: 균등 분포 (1~4개)
-- 트렌드: 50/50 확률
-- 변동률: LLM이 정규분포 유사하게 생성 (-0.2 ~ +0.2 주로, 극단값 희귀)
