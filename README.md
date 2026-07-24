@@ -17,8 +17,6 @@ AI 기반 뉴스 생성을 통한 실시간 원자재 가격 변동 시뮬레이
 
 #### Frontend
 - **Streamlit** (v1.60.0): 실시간 대시보드 UI
-- **Pandas** (v3.0.5): 데이터 처리
-- **Altair** (v6.2.2): 시각화
 
 #### Infrastructure
 - **Docker**: 컨테이너화 배포
